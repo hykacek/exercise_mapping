@@ -68,4 +68,53 @@ def inverse_bwt(bwt):
 
     return "".join(reversed(reverse_bwt_str)) + "$"
 
+#TASK3
+class FMIndex:
+    def __init__(self, text: str, s: int):
+        self.s = s
+        sa = suffix_array(text)
+        self.bwt = bwt(text, sa)
+        self.first_occurrence = first_occurrence(self.bwt)
+        self.sampled = {}
+        for row, position in enumerate(sa):
+            if position % s == 0:
+                self.sampled[row] = position
+        self.counts = {}
+        for char in set(self.bwt):
+            self.counts[char] = [0] * (len(self.bwt) +1)
+        for i, char in enumerate(self.bwt):
+            for letter in set(self.bwt):
+                self.counts[letter][i+1] = self.counts[letter][i]
+            self.counts[char][i+1] += 1
+
+    def lf(self, row):
+        char = self.bwt[row]
+        next_row = self.first_occurrence[char] + self.counts[char][row]
+        return next_row
+
+    def count(self, p):
+        top = 0
+        bottom = len(self.bwt)
+
+        for char in reversed(p):
+            top = self.first_occurrence[char] + self.counts[char][top]
+            bottom = self.first_occurrence[char] + self.counts[char][bottom]
+        return top, bottom
+
+    def locate(self, p):
+        top, bottom = self.count(p)
+        locations = []
+        for row in range (top, bottom):
+            current_row = row
+            steps = 0
+
+            while current_row not in self.sampled:
+                current_row = self.lf(current_row)
+                steps += 1
+
+            locations.append(self.sampled[current_row]+steps)
+        return locations
+
+        
+
 
