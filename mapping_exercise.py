@@ -115,6 +115,61 @@ class FMIndex:
             locations.append(self.sampled[current_row]+steps)
         return locations
 
-        
+#TASK4
+def reverse_complement(seq) -> str:
+    seq = seq[::-1]
+    table = str.maketrans("ATCG", "TAGC")
+    complemented = seq.translate(table)
+    return complemented
+
+def hamming(a,b):
+    assert len(a) == len(b)
+    missmatches = 0
+    if i in range(len(a)):
+        if a[i] != b[i]:
+            missmatches += 1
+    return missmatches
+
+def seeds(read, n):
+    seeds_list = []
+    for i in range(n):
+        start = i* len(read) // n
+        end = (i+1) * len(read) // n
+        seeds_list.append(start, read[start:end])
+    return seeds_list
+
+def map_read(read, fm, ref, d=2, n_seeds=None):
+    hits = set()
+    total_candidates = 0
+    strands = [("+", read), ("-", reverse_complement(read))]
+    for strand, seq in strands:
+        candidates = set()
+        seeds_read = seeds(seq, n_seeds)
+        for offset, seed in seeds_read:
+            positions = fm.locate(seed)
+            for position in positions:
+                start = position - offset
+                if 0 <= start <= len(ref) - len(seq):
+                    candidates.add(start)
+
+        total_candidates += len(candidates)
+
+        for start in candidates:
+            ref_sub = ref[start : start + len(seq)]
+            mismatches = hamming(seq, ref_sub)
+            if mismatches <= d:
+                hits.add((strand, start, mismatches))
+
+    return sorted(list(hits)), total_candidates
 
 
+def brute_map(read: str, ref: str, d: int = 2) -> list[tuple[str, int, int]]:
+    hits = set()
+    strands = [("+", read), ("-", reverse_complement(read))]
+    for strand, seq in strands:
+        for position in range(len(ref) - len(read) + 1):
+            ref_sub = ref[position : position + len(read)]
+            if hamming(seq, ref_sub) <= d:
+                hits.add((strand, position, hamming(seq, ref_sub)))
+
+    return sorted(list(hits))
